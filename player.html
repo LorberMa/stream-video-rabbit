@@ -1,16 +1,43 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Rabbit Stream</title></head>
+<head>
+  <meta charset="utf-8">
+  <title>Rabbit Stream</title>
+</head>
 <body>
 <h2>Rabbit Video Stream</h2>
+
 <video id="video" controls width="640"></video>
+
+<select id="qualitySelect">
+  <option value="-1">Auto</option>
+</select>
+
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
   const video = document.getElementById('video');
+  const qualitySelect = document.getElementById('qualitySelect');
+
   if (Hls.isSupported()) {
     const hls = new Hls();
     hls.loadSource('master.m3u8');
     hls.attachMedia(video);
+
+    hls.on(Hls.Events.MANIFEST_PARSED, function () {
+      const levels = hls.levels;
+
+      levels.forEach((level, i) => {
+        const option = document.createElement('option');
+        option.value = i;
+        option.text = level.height + 'p';
+        qualitySelect.appendChild(option);
+      });
+
+      qualitySelect.addEventListener('change', () => {
+        const selected = parseInt(qualitySelect.value);
+        hls.currentLevel = selected;  // -1 means "auto"
+      });
+    });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     video.src = 'master.m3u8';
   }
