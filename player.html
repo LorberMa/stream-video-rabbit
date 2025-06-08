@@ -26,6 +26,7 @@
     hls.on(Hls.Events.MANIFEST_PARSED, function () {
       const levels = hls.levels;
 
+      // Add resolution options to dropdown
       levels.forEach((level, i) => {
         const option = document.createElement('option');
         option.value = i;
@@ -33,11 +34,34 @@
         qualitySelect.appendChild(option);
       });
 
+      // Listen for selection change
       qualitySelect.addEventListener('change', () => {
         const selected = parseInt(qualitySelect.value);
-        hls.currentLevel = selected;  // -1 means "auto"
+
+        if (selected === -1) {
+          hls.currentLevel = -1; // Auto
+          hls.autoLevelEnabled = true;
+          console.log('Switched to auto quality');
+        } else {
+          hls.currentLevel = selected;
+          hls.autoLevelEnabled = false;
+          console.log(`Switched to quality level ${selected} (${hls.levels[selected].height}p)`);
+
+          // Optional: flush buffer to see change faster (be cautious)
+          if (hls.bufferController && typeof hls.bufferController.flushBuffer === 'function') {
+            const currentTime = video.currentTime;
+            hls.bufferController.flushBuffer(currentTime - 5, currentTime + 5);
+          }
+        }
       });
     });
+
+    // Log whenever the quality actually changes
+    hls.on(Hls.Events.LEVEL_SWITCHED, function (_, data) {
+      const level = hls.levels[data.level];
+      console.log(`Playback switched to: ${level.height}p`);
+    });
+
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     video.src = 'master.m3u8';
   }
